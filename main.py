@@ -228,9 +228,10 @@ def main(agent_config, env_config, index, monitor, after,
     # later runs will overwrite earlier runs with updated data.
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
+        
 
     save_file = save_dir + env_config["env_name"] + "_" + \
-        agent_config["agent_name"] + f"_expectile_{agent_config['parameters']['expectile'][0]}" + f"_data_{index}.pkl"
+        agent_config["agent_name"] + f"_expectile_{agent_config['parameters']['use_expectile'][0]}{agent_config['parameters']['expectile'][0]}" + f"_data_{index}.pkl"
 
     print("=== Saving ===")
     print(save_file)

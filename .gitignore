@@ -10,6 +10,8 @@ venv/
 # Don't store any results
 results/
 
+**/*.png
+
 # Ignore binary files
 **/*.pkl
 **/*.bin
