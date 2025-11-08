@@ -15,6 +15,8 @@
         "weight_init": ["xavier_uniform"],
         "clip_stddev": [1000],
 		"cuda": [false],
-		"n_rho": [[30, 0.1]]
+		"n_rho": [[30, 0.1]],
+        "expectile": [0.8],
+        "use_expectile": [false]
     }
 }

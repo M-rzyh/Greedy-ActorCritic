@@ -141,7 +141,7 @@ def main(agent_config, env_config, index, monitor, after,
     # Calculate the run number and the random seed
     RUN_NUM = index // total_sweeps
     RANDOM_SEED = np.iinfo(np.int16).max - RUN_NUM
-
+    
     # Create the environment
     env_config["seed"] = RANDOM_SEED
     if agent_config["agent_name"] == "linearAC" or \
@@ -230,7 +230,7 @@ def main(agent_config, env_config, index, monitor, after,
         os.makedirs(save_dir)
 
     save_file = save_dir + env_config["env_name"] + "_" + \
-        agent_config["agent_name"] + f"_data_{index}.pkl"
+        agent_config["agent_name"] + f"_expectile_{agent_config['parameters']['expectile'][0]}" + f"_data_{index}.pkl"
 
     print("=== Saving ===")
     print(save_file)

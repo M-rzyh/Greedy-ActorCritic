@@ -7,6 +7,7 @@ import numpy as np
 from agent.baseAgent import BaseAgent
 from utils.experience_replay import TorchBuffer as ExperienceReplay
 from agent.nonlinear.value_function.MLP import Q as QMLP
+from agent.nonlinear.value_function.MLP import V as VMLP
 from agent.nonlinear.policy.MLP import SquashedGaussian, Gaussian, Softmax
 import agent.nonlinear.nn_utils as nn_utils
 import inspect
@@ -16,12 +17,12 @@ class GreedyAC(BaseAgent):
     """
     GreedyAC implements the GreedyAC algorithm with continuous actions.
     """
-    def __init__(self, num_inputs, action_space, gamma, tau, alpha, policy,
+    def __init__(self, num_inputs, action_space, gamma, tau, expectile, alpha, policy,
                  target_update_interval, critic_lr, actor_lr_scale,
                  actor_hidden_dim, critic_hidden_dim, replay_capacity, seed,
                  batch_size, rho, num_samples, betas, env, cuda=False,
                  clip_stddev=1000, init=None, entropy_from_single_sample=True,
-                 activation="relu"):
+                 activation="relu", use_expectile=True):
         super().__init__()
 
         self.batch = True
@@ -45,6 +46,7 @@ class GreedyAC(BaseAgent):
         self.state_dims = num_inputs
         self.discrete_action = isinstance(action_space, Discrete)
         self.action_space = action_space
+        self.use_expectile = use_expectile
 
         self.device = torch.device("cuda:0" if cuda and
                                    torch.cuda.is_available() else "cpu")
@@ -72,12 +74,20 @@ class GreedyAC(BaseAgent):
         # For GreedyAC update
         self.rho = rho
         self.num_samples = num_samples
+        self.expectile = expectile
 
         # Create the critic Q function
         if isinstance(action_space, Box):
             action_shape = action_space.shape[0]
         elif isinstance(action_space, Discrete):
             action_shape = 1
+            
+        if self.use_expectile:
+            self.value = VMLP(num_inputs, critic_hidden_dim, init, activation).to(
+                device=self.device)
+
+            self.value_optim = Adam(self.value.parameters(), lr=critic_lr,
+                                    betas=betas)
 
         self.critic = QMLP(num_inputs, action_shape, critic_hidden_dim,
                            init, activation).to(device=self.device)
@@ -103,6 +113,10 @@ class GreedyAC(BaseAgent):
 
         source = inspect.getsource(inspect.getmodule(inspect.currentframe()))
         self.info["source"] = source
+        
+    def expectile_loss(self, diff, expectile):
+        weight = torch.where(diff > 0, expectile, (1 - expectile))
+        return (weight * (diff ** 2)).mean()
 
     def update(self, state, action, reward, next_state, done_mask):
         # Adjust action shape to ensure it fits in replay buffer properly
@@ -115,16 +129,35 @@ class GreedyAC(BaseAgent):
         # Sample a batch from memory
         state_batch, action_batch, reward_batch, next_state_batch, \
             mask_batch = self.replay.sample(batch_size=self.batch_size)
-
+            
         if state_batch is None:
             # Too few samples in the buffer to sample
             return
+
+        # Update value function if using expectile
+                
+        if self.use_expectile:
+            with torch.no_grad():
+                q = self.critic(state_batch, action_batch)
+
+            v = self.value(state_batch)
+        
+            v_loss = self.expectile_loss(q - v, self.expectile)
+            
+            self.value_optim.zero_grad()
+            v_loss.backward()
+            self.value_optim.step()
+        
 
         # When updating Q functions, we don't want to backprop through the
         # policy and target network parameters
         next_state_action, _, _ = self.policy.sample(next_state_batch)
         with torch.no_grad():
-            next_q = self.critic_target(next_state_batch, next_state_action)
+            if self.use_expectile:
+                next_q = self.value(next_state_batch)
+            else:
+                next_q = self.critic_target(next_state_batch, next_state_action)
+                
             target_q_value = reward_batch + mask_batch * self.gamma * next_q
 
         q_value = self.critic(state_batch, action_batch)

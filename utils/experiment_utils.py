@@ -216,6 +216,8 @@ def create_agent(agent, config):
             num_samples=config["n_rho"][0],
             betas=config["betas"], activation=activation,
             env=config["env"],
+            expectile=config["expectile"],
+            use_expectile=config["use_expectile"]
         )
 
     raise NotImplementedError("No agent " + agent)

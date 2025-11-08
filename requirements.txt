@@ -8,7 +8,6 @@ fonttools==4.39.3
 gym==0.21.0
 kiwisolver==1.4.4
 matplotlib==3.6.2
-git+ssh://git@github.com/kenjyoung/MinAtar@2a12fc8#egg=MinAtar
 numpy==1.23.5
 nvidia-cublas-cu11==11.10.3.66
 nvidia-cuda-nvrtc-cu11==11.7.99
