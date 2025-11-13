@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Configuration
-ENV_CONFIG="/home/arya/GreedyAC/config/environment/AcrobotContinuous-v1.json"
+ENV_CONFIG="/home/arya/code/Greedy-ActorCritic/config/environment/AcrobotContinuous-v1.json"
 AGENT_CONFIG="config/agent/GreedyAC.json"
-START_INDEX=7
+START_INDEX=1
 END_INDEX=25
 SAVE_DIR="./results"
 

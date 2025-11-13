@@ -91,14 +91,6 @@ class GreedyAC(BaseAgent):
             self.value_optim = Adam(self.value.parameters(), lr=critic_lr,
                                     betas=betas)
             
-        if self.use_greedy_exp:
-            self.greedy_critic = QMLP(num_inputs, action_shape, critic_hidden_dim,
-                                      init, activation).to(device=self.device)
-            
-            self.greedy_critic_optim = Adam(self.greedy_critic.parameters(), lr=critic_lr,
-                                            betas=betas)
-            
-                
 
         self.critic = QMLP(num_inputs, action_shape, critic_hidden_dim,
                            init, activation).to(device=self.device)
@@ -159,22 +151,13 @@ class GreedyAC(BaseAgent):
             v_loss.backward()
             self.value_optim.step()
             
-        if self.use_greedy_exp:
-            with torch.no_grad():
-                q = self.critic(state_batch, action_batch)
-            greedy_q = self.greedy_critic(state_batch, action_batch)
-            gloss = self.expectile_loss(q - greedy_q, self.expectile)
-            
-            self.greedy_critic_optim.zero_grad()
-            gloss.backward()
-            self.greedy_critic_optim.step()
         
 
         # When updating Q functions, we don't want to backprop through the
         # policy and target network parameters
         next_state_action, _, _ = self.policy.sample(next_state_batch)
         with torch.no_grad():
-            if self.use_expectile and not self.use_greedy_exp:
+            if self.use_expectile:
                 next_q = self.value(next_state_batch)
             else:
                 next_q = self.critic_target(next_state_batch, next_state_action)
@@ -211,14 +194,7 @@ class GreedyAC(BaseAgent):
         # Get the values of the sampled actions and find the best
         # ϱ * num_samples actions
         with torch.no_grad():
-            if self.use_greedy_exp and not self.use_expectile:
-                g_values = self.greedy_critic(stacked_s_batch, action_batch)
-                q_values = self.critic(stacked_s_batch, action_batch)
-                q_values = torch.max(g_values, q_values)
-            elif self.use_expectile:
-                q_values = self.value(stacked_s_batch)
-            else:
-                q_values = self.critic(stacked_s_batch, action_batch)
+            q_values = self.critic(stacked_s_batch, action_batch)
         
         q_values = q_values.reshape(self.batch_size, self.num_samples,
                                     1)
