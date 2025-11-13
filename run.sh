@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-ENV_CONFIG="/home/arya/code/Greedy-ActorCritic/config/environment/AcrobotContinuous-v1.json"
+ENV_CONFIG="config/environment/MountainCarContinuous-v1.json"
 AGENT_CONFIG="config/agent/GreedyAC.json"
 START_INDEX=1
 END_INDEX=25
