@@ -176,7 +176,7 @@ class GreedyAC(BaseAgent):
         with torch.no_grad():
             if self.use_expectile and not self.use_greedy_exp:
                 next_q = self.value(next_state_batch)
-            elif self.use_greedy_exp:
+            else:
                 next_q = self.critic_target(next_state_batch, next_state_action)
                 
             target_q_value = reward_batch + mask_batch * self.gamma * next_q
