@@ -212,7 +212,9 @@ class GreedyAC(BaseAgent):
         # ϱ * num_samples actions
         with torch.no_grad():
             if self.use_greedy_exp and not self.use_expectile:
-                q_values = self.greedy_critic(stacked_s_batch, action_batch)
+                g_values = self.greedy_critic(stacked_s_batch, action_batch)
+                q_values = self.critic(stacked_s_batch, action_batch)
+                q_values = torch.max(g_values, q_values)
             elif self.use_expectile:
                 q_values = self.value(stacked_s_batch)
             else:

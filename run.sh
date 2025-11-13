@@ -3,7 +3,7 @@
 # Configuration
 ENV_CONFIG="/home/arya/GreedyAC/config/environment/AcrobotContinuous-v1.json"
 AGENT_CONFIG="config/agent/GreedyAC.json"
-START_INDEX=1
+START_INDEX=7
 END_INDEX=25
 SAVE_DIR="./results"
 
