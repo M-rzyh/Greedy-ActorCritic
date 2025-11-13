@@ -76,7 +76,10 @@ class GreedyAC(BaseAgent):
         # For GreedyAC update
         self.rho = rho
         self.num_samples = num_samples
+
         self.expectile = expectile
+
+        self.total_updates = 0  # Track total number of updates for scheduling
 
         # Create the critic Q function
         if isinstance(action_space, Box):
@@ -137,7 +140,7 @@ class GreedyAC(BaseAgent):
         # Sample a batch from memory
         state_batch, action_batch, reward_batch, next_state_batch, \
             mask_batch = self.replay.sample(batch_size=self.batch_size)
-            
+
         if state_batch is None:
             # Too few samples in the buffer to sample
             return
@@ -146,7 +149,7 @@ class GreedyAC(BaseAgent):
                 
         if self.use_expectile:
             with torch.no_grad():
-                q = self.critic(state_batch, action_batch)
+                q = self.critic_target(state_batch, action_batch)
 
             if self.expectile_mode == 'v':
                 v = self.value(state_batch)
@@ -175,9 +178,25 @@ class GreedyAC(BaseAgent):
             target_q_value = reward_batch + mask_batch * self.gamma * next_q
 
         q_value = self.critic(state_batch, action_batch)
+        # if self.use_expectile:
+        #     if self.expectile_mode == 'v':
+        #         greedy_q_value = self.value(state_batch)
+        #     else:  # 'q' mode
+        #         greedy_q_value = self.value(state_batch, action_batch)
+        # print(greedy_q_value)
+        # print(greedy_q_value)
+        # print("---")
+        # print(q_value)
 
         # Calculate the loss on the critic
         # JQ = 𝔼(st,at)~D[0.5(Q1(st,at) - r(st,at) - γ(𝔼st+1~p[V(st+1)]))^2]
+        
+        # v_loss = self.expectile_loss(greedy_q_value - target_q_value, self.expectile)
+            
+        # self.value_optim.zero_grad()
+        # v_loss.backward()
+        # self.value_optim.step()
+
         q_loss = F.mse_loss(target_q_value, q_value)
 
         # Update the critic
