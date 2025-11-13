@@ -97,6 +97,8 @@ class GreedyAC(BaseAgent):
             
             self.greedy_critic_optim = Adam(self.greedy_critic.parameters(), lr=critic_lr,
                                             betas=betas)
+            
+                
 
         self.critic = QMLP(num_inputs, action_shape, critic_hidden_dim,
                            init, activation).to(device=self.device)
@@ -172,9 +174,9 @@ class GreedyAC(BaseAgent):
         # policy and target network parameters
         next_state_action, _, _ = self.policy.sample(next_state_batch)
         with torch.no_grad():
-            if self.use_expectile:
+            if self.use_expectile and not self.use_greedy_exp:
                 next_q = self.value(next_state_batch)
-            else:
+            elif self.use_greedy_exp:
                 next_q = self.critic_target(next_state_batch, next_state_action)
                 
             target_q_value = reward_batch + mask_batch * self.gamma * next_q
@@ -209,8 +211,10 @@ class GreedyAC(BaseAgent):
         # Get the values of the sampled actions and find the best
         # ϱ * num_samples actions
         with torch.no_grad():
-            if self.use_greedy_exp:
+            if self.use_greedy_exp and not self.use_expectile:
                 q_values = self.greedy_critic(stacked_s_batch, action_batch)
+            elif self.use_expectile:
+                q_values = self.value(stacked_s_batch)
             else:
                 q_values = self.critic(stacked_s_batch, action_batch)
         
