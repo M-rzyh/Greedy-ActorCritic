@@ -23,7 +23,7 @@ class GreedyAC(BaseAgent):
                  actor_hidden_dim, critic_hidden_dim, replay_capacity, seed,
                  batch_size, rho, num_samples, betas, env, cuda=False,
                  clip_stddev=1000, init=None, entropy_from_single_sample=True,
-                 activation="relu", use_expectile=True, use_greedy_exp=False):
+                 activation="relu", use_expectile=True, use_greedy_action=False):
         super().__init__()
 
         self.batch = True
@@ -48,7 +48,7 @@ class GreedyAC(BaseAgent):
         self.discrete_action = isinstance(action_space, Discrete)
         self.action_space = action_space
         self.use_expectile = use_expectile
-        self.use_greedy_exp = use_greedy_exp
+        self.use_greedy_action = use_greedy_action
 
         self.device = torch.device("cuda:0" if cuda and
                                    torch.cuda.is_available() else "cpu")
@@ -85,8 +85,12 @@ class GreedyAC(BaseAgent):
             action_shape = 1
             
         if self.use_expectile:
-            self.value = VMLP(num_inputs, critic_hidden_dim, init, activation).to(
-                device=self.device)
+            if self.use_greedy_action:
+                self.value = QMLP(num_inputs, action_shape, critic_hidden_dim, init,
+                                  activation).to(self.device)
+            else:
+                self.value = VMLP(num_inputs, critic_hidden_dim, init, activation).to(
+                    device=self.device)
 
             self.value_optim = Adam(self.value.parameters(), lr=critic_lr,
                                     betas=betas)
@@ -142,8 +146,11 @@ class GreedyAC(BaseAgent):
         if self.use_expectile:
             with torch.no_grad():
                 q = self.critic(state_batch, action_batch)
-
-            v = self.value(state_batch)
+                
+            if self.use_greedy_action:
+                v = self.value(state_batch, action_batch)
+            else:
+                v = self.value(state_batch)
         
             v_loss = self.expectile_loss(q - v, self.expectile)
             
@@ -158,7 +165,10 @@ class GreedyAC(BaseAgent):
         next_state_action, _, _ = self.policy.sample(next_state_batch)
         with torch.no_grad():
             if self.use_expectile:
-                next_q = self.value(next_state_batch)
+                if self.use_greedy_action:
+                    next_q = self.value(next_state_batch, next_state_action)
+                else:
+                    next_q = self.value(next_state_batch)
             else:
                 next_q = self.critic_target(next_state_batch, next_state_action)
                 
