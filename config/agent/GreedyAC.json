@@ -17,6 +17,7 @@
 		"cuda": [true],
 		"n_rho": [[30, 0.1]],
         "expectile": [0.8],
-        "use_expectile": [true]
+        "use_expectile": [false],
+        "use_greedy_exp": [true]
     }
 }

@@ -13,6 +13,7 @@ import agent.nonlinear.nn_utils as nn_utils
 import inspect
 
 
+
 class GreedyAC(BaseAgent):
     """
     GreedyAC implements the GreedyAC algorithm with continuous actions.
@@ -22,7 +23,7 @@ class GreedyAC(BaseAgent):
                  actor_hidden_dim, critic_hidden_dim, replay_capacity, seed,
                  batch_size, rho, num_samples, betas, env, cuda=False,
                  clip_stddev=1000, init=None, entropy_from_single_sample=True,
-                 activation="relu", use_expectile=True):
+                 activation="relu", use_expectile=True, use_greedy_exp=False):
         super().__init__()
 
         self.batch = True
@@ -47,6 +48,7 @@ class GreedyAC(BaseAgent):
         self.discrete_action = isinstance(action_space, Discrete)
         self.action_space = action_space
         self.use_expectile = use_expectile
+        self.use_greedy_exp = use_greedy_exp
 
         self.device = torch.device("cuda:0" if cuda and
                                    torch.cuda.is_available() else "cpu")
@@ -88,6 +90,13 @@ class GreedyAC(BaseAgent):
 
             self.value_optim = Adam(self.value.parameters(), lr=critic_lr,
                                     betas=betas)
+            
+        if self.use_greedy_exp:
+            self.greedy_critic = QMLP(num_inputs, action_shape, critic_hidden_dim,
+                                      init, activation).to(device=self.device)
+            
+            self.greedy_critic_optim = Adam(self.greedy_critic.parameters(), lr=critic_lr,
+                                            betas=betas)
 
         self.critic = QMLP(num_inputs, action_shape, critic_hidden_dim,
                            init, activation).to(device=self.device)
@@ -147,6 +156,16 @@ class GreedyAC(BaseAgent):
             self.value_optim.zero_grad()
             v_loss.backward()
             self.value_optim.step()
+            
+        if self.use_greedy_exp:
+            with torch.no_grad():
+                q = self.critic(state_batch, action_batch)
+            greedy_q = self.greedy_critic(state_batch, action_batch)
+            gloss = self.expectile_loss(q - greedy_q, self.expectile)
+            
+            self.greedy_critic_optim.zero_grad()
+            gloss.backward()
+            self.greedy_critic_optim.step()
         
 
         # When updating Q functions, we don't want to backprop through the
@@ -190,8 +209,11 @@ class GreedyAC(BaseAgent):
         # Get the values of the sampled actions and find the best
         # ϱ * num_samples actions
         with torch.no_grad():
-            q_values = self.critic(stacked_s_batch, action_batch)
-
+            if self.use_greedy_exp:
+                q_values = self.greedy_critic(stacked_s_batch, action_batch)
+            else:
+                q_values = self.critic(stacked_s_batch, action_batch)
+        
         q_values = q_values.reshape(self.batch_size, self.num_samples,
                                     1)
         sorted_q = torch.argsort(q_values, dim=1, descending=True)
