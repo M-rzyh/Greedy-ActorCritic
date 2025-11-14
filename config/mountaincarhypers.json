@@ -5,19 +5,20 @@
         "replay_capacity": [100000],
         "batch_size": [32],
         "tau": [0.1],
-		"alpha": [1e-2],
+		"alpha": [1.0],
 		"betas": [[0.9, 0.999]],
         "policy_type": ["Gaussian"],
         "target_update_interval": [1],
-        "critic_lr": [1e-2],
+        "critic_lr": [1e-3],
         "actor_lr_scale": [1e-1],
         "hidden_dim": [64],
         "weight_init": ["xavier_uniform"],
         "clip_stddev": [1000],
 		"cuda": [true],
 		"n_rho": [[30, 0.1]],
-        "expectile": [0.8],
-        "use_expectile": [true],
+        "expectile": [0.9],
+        "use_expectile": [false],
         "expectile_mode": ["v"]
     }
 }
+
