@@ -121,6 +121,48 @@ def create_agent(agent, config):
             double_q=config["double_q"],
             num_samples=config["num_samples"],
         )
+        
+    # Soft Actor-Critic with Expectile Loss
+    if agent.lower() == "SAC_expectile".lower():
+        if "activation" in config:
+            activation = config["activation"]
+        else:
+            activation = "relu"
+
+        if "num_hidden" in config:
+            num_hidden = config["num_hidden"]
+        else:
+            num_hidden = 3
+        from agent.nonlinear.SAC_expectile import SACExpectile
+        return SACExpectile(
+            baseline_actions=config["baseline_actions"],
+            gamma=config["gamma"],
+            tau=config["tau"],
+            alpha=config["alpha"],
+            policy=config["policy_type"],
+            target_update_interval=config["target_update_interval"],
+            critic_lr=config["critic_lr"],
+            actor_lr_scale=config["actor_lr_scale"],
+            alpha_lr=config["alpha_lr"],
+            actor_hidden_dim=config["hidden_dim"],
+            critic_hidden_dim=config["hidden_dim"],
+            replay_capacity=config["replay_capacity"],
+            seed=config["seed"],
+            batch_size=config["batch_size"],
+            automatic_entropy_tuning=config["automatic_entropy_tuning"],
+            cuda=config["cuda"],
+            clip_stddev=config["clip_stddev"],
+            init=config["weight_init"],
+            betas=config["betas"],
+            activation=activation,
+            env=config["env"],
+            soft_q=config["soft_q"],
+            reparameterized=config["reparameterized"],
+            double_q=config["double_q"],
+            num_samples=config["num_samples"],
+            expectile=config.get("expectile", 0.7),
+    )
+
 
     # Discrete Soft Actor-Critic
     if agent.lower() == "SACDiscrete".lower():
