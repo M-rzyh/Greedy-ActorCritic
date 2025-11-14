@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Configuration
-ENV_CONFIG="config/environment/AcrobotContinuous-v1.json"
+ENV_CONFIG="config/environment/MountainCarContinuous-v1.json"
 AGENT_CONFIG="config/agent/GreedyAC.json"
-START_INDEX=1
+START_INDEX=3
 END_INDEX=25
 SAVE_DIR="./results"
 

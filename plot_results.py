@@ -79,8 +79,9 @@ def extract_model_name(file_path):
                         break
 
                 if agent_idx is not None:
-                    expectile_value = parts[i:i+2]
-                    model_id = '_'.join([parts[agent_idx]] + expectile_value)
+                    # Include expectile and the next 3 parameters: use_expectile, expectile_value, expectile_mode
+                    expectile_config = parts[i:i+4]
+                    model_id = '_'.join([parts[agent_idx]] + expectile_config)
                     return model_id
 
     # Default: use agent name and some config identifier
