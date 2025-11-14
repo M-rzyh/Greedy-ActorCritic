@@ -3,7 +3,7 @@
 # Configuration
 ENV_CONFIG="config/environment/MountainCarContinuous-v1.json"
 AGENT_CONFIG="config/agent/GreedyAC.json"
-START_INDEX=3
+START_INDEX=1
 END_INDEX=25
 SAVE_DIR="./results"
 

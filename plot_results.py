@@ -465,41 +465,75 @@ def main(results_folder="./results", smooth_window=1,
     print(f"LOADING AND PLOTTING {plot_type_name} REWARDS ACROSS SEEDS")
     print("="*80)
 
-    # Load data grouped by model
-    models_data = load_results_from_folder(results_folder)
+    # Find all subdirectories in results folder
+    subdirs = [d for d in os.listdir(results_folder)
+               if os.path.isdir(os.path.join(results_folder, d))]
 
-    if not models_data:
-        print("No data found. Exiting.")
-        return
+    # If no subdirectories, process the results folder directly
+    if not subdirs:
+        print("No subdirectories found. Processing results folder directly.")
+        subdirs = ['.']
 
-    # Print summary statistics
-    print_summary_statistics(models_data)
+    print(f"\nFound {len(subdirs)} folder(s) to process:")
+    for subdir in subdirs:
+        print(f"  - {subdir}")
 
-    # Create plots based on type
-    print("\n" + "="*80)
-    print(f"GENERATING {plot_type_name} REWARDS PLOT")
-    print("="*80)
+    all_plots = []
 
-    if plot_type in ["train", "both"]:
-        train_path = output_path if plot_type == "train" else output_path.replace('.png', '_train.png')
-        plot_training_rewards(models_data, save_path=train_path,
-                             smooth_window=smooth_window, show_std=show_std)
+    # Process each subdirectory separately
+    for subdir in subdirs:
+        folder_path = os.path.join(results_folder, subdir) if subdir != '.' else results_folder
+        folder_name = subdir if subdir != '.' else 'results'
 
-    if plot_type in ["eval", "both"]:
-        eval_path = output_path if plot_type == "eval" else output_path.replace('.png', '_eval.png')
-        plot_evaluation_rewards(models_data, save_path=eval_path,
-                               smooth_window=smooth_window, show_std=show_std)
+        print("\n" + "="*80)
+        print(f"PROCESSING FOLDER: {folder_name}")
+        print("="*80)
+
+        # Load data grouped by model for this folder
+        models_data = load_results_from_folder(folder_path)
+
+        if not models_data:
+            print(f"No data found in {folder_name}. Skipping.")
+            continue
+
+        # Print summary statistics
+        print_summary_statistics(models_data)
+
+        # Create plots based on type
+        print("\n" + "="*80)
+        print(f"GENERATING {plot_type_name} REWARDS PLOT FOR {folder_name}")
+        print("="*80)
+
+        # Generate output paths with folder name
+        base_name = os.path.splitext(output_path)[0]
+        ext = os.path.splitext(output_path)[1] if os.path.splitext(output_path)[1] else '.png'
+
+        if plot_type in ["train", "both"]:
+            if plot_type == "train":
+                train_path = f"{base_name}_{folder_name}{ext}"
+            else:
+                train_path = f"{base_name}_{folder_name}_train{ext}"
+
+            plot_training_rewards(models_data, save_path=train_path,
+                                 smooth_window=smooth_window, show_std=show_std)
+            all_plots.append(("Training", folder_name, train_path))
+
+        if plot_type in ["eval", "both"]:
+            if plot_type == "eval":
+                eval_path = f"{base_name}_{folder_name}{ext}"
+            else:
+                eval_path = f"{base_name}_{folder_name}_eval{ext}"
+
+            plot_evaluation_rewards(models_data, save_path=eval_path,
+                                   smooth_window=smooth_window, show_std=show_std)
+            all_plots.append(("Evaluation", folder_name, eval_path))
 
     print("\n" + "="*80)
     print("DONE!")
     print("="*80)
     print(f"\nPlot(s) saved:")
-    if plot_type in ["train", "both"]:
-        train_path = output_path if plot_type == "train" else output_path.replace('.png', '_train.png')
-        print(f"  Training: {train_path}")
-    if plot_type in ["eval", "both"]:
-        eval_path = output_path if plot_type == "eval" else output_path.replace('.png', '_eval.png')
-        print(f"  Evaluation: {eval_path}")
+    for plot_type_str, folder_name, path in all_plots:
+        print(f"  {plot_type_str} ({folder_name}): {path}")
     if smooth_window > 1:
         print(f"Smoothing window: {smooth_window}")
     print(f"Standard error shading: {'enabled' if show_std else 'disabled'}")
