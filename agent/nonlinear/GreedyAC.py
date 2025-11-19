@@ -23,7 +23,7 @@ class GreedyAC(BaseAgent):
                  actor_hidden_dim, critic_hidden_dim, replay_capacity, seed,
                  batch_size, rho, num_samples, betas, env, cuda=False,
                  clip_stddev=1000, init=None, entropy_from_single_sample=True,
-                 activation="relu", use_expectile=False, expectile_mode='v'):
+                 activation="relu", use_expectile=False):
         super().__init__()
 
         self.batch = True
@@ -48,7 +48,6 @@ class GreedyAC(BaseAgent):
         self.discrete_action = isinstance(action_space, Discrete)
         self.action_space = action_space
         self.use_expectile = use_expectile
-        self.expectile_mode = expectile_mode
 
         self.device = torch.device("cuda:0" if cuda and
                                    torch.cuda.is_available() else "cpu")
@@ -151,10 +150,7 @@ class GreedyAC(BaseAgent):
             with torch.no_grad():
                 q = self.critic_target(state_batch, action_batch)
 
-            if self.expectile_mode == 'v':
-                v = self.value(state_batch)
-            else:  # 'q' mode
-                v = self.value(state_batch, action_batch)
+            v = self.value(state_batch)
         
             v_loss = self.expectile_loss(q - v, self.expectile)
             
@@ -168,34 +164,14 @@ class GreedyAC(BaseAgent):
         next_state_action, _, _ = self.policy.sample(next_state_batch)
         with torch.no_grad():
             if self.use_expectile:
-                if self.expectile_mode == 'v':
-                    next_q = self.value(next_state_batch)
-                else:  # 'q' mode
-                    next_q = self.value(next_state_batch, next_state_action)
+                next_q = self.value(next_state_batch)
+                
             else:
                 next_q = self.critic_target(next_state_batch, next_state_action)
                 
             target_q_value = reward_batch + mask_batch * self.gamma * next_q
 
         q_value = self.critic(state_batch, action_batch)
-        # if self.use_expectile:
-        #     if self.expectile_mode == 'v':
-        #         greedy_q_value = self.value(state_batch)
-        #     else:  # 'q' mode
-        #         greedy_q_value = self.value(state_batch, action_batch)
-        # print(greedy_q_value)
-        # print(greedy_q_value)
-        # print("---")
-        # print(q_value)
-
-        # Calculate the loss on the critic
-        # JQ = 𝔼(st,at)~D[0.5(Q1(st,at) - r(st,at) - γ(𝔼st+1~p[V(st+1)]))^2]
-        
-        # v_loss = self.expectile_loss(greedy_q_value - target_q_value, self.expectile)
-            
-        # self.value_optim.zero_grad()
-        # v_loss.backward()
-        # self.value_optim.step()
 
         q_loss = F.mse_loss(target_q_value, q_value)
 

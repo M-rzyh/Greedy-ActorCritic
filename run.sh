@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-ENV_CONFIG="config/environment/PendulumContinuous-v0.json"
+ENV_CONFIG="config/environment/AcrobotContinuous-v1.json"
 AGENT_CONFIG="config/agent/GreedyAC.json"
 START_INDEX=1
 END_INDEX=25

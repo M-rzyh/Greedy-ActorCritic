@@ -12,6 +12,47 @@ from glob import glob
 import seaborn as sns
 from collections import defaultdict
 
+# ============================================================================
+# LEGEND NAMES AND COLORS CUSTOMIZATION
+# ============================================================================
+# Maps model identifiers to display names in the legend
+# Add or modify entries here to customize legend labels
+LEGEND_NAMES = {
+    'GreedyAC_expectile_True_0.8_v': 'GreedyAC (expectile=0.8)',
+    'GreedyAC_expectile_True_0.9_v': 'GreedyAC (expectile=0.9)',
+    'GreedyAC_expectile_False_0.5_v': 'GreedyAC (no expectile)',
+    'GreedyAC_expectile_False_0.9_v': 'GreedyAC (no expectile)',
+    'GreedyAC_expectile_True_0.7_v': 'GreedyAC (expectile=0.7)',
+    'GreedyAC': 'GreedyAC',
+    'SAC': 'SAC',
+    'VAC': 'VAC',
+    # Add more custom names here as needed
+    # Example:
+    # 'YourModelName': 'Display Name for Legend',
+}
+
+# Maps model identifiers to colors (use hex codes or named colors)
+# If a model is not in this dict, it will use the default color palette
+MODEL_COLORS = {
+    'GreedyAC_expectile_True_0.8_v': '#1f77b4',  # Blue
+    'GreedyAC_expectile_True_0.9_v': '#ff7f0e',  # Orange
+    'GreedyAC_expectile_False_0.5_v': '#d62728',  # Red
+    'GreedyAC_expectile_False_0.9_v': '#d62728',  # Red
+    'GreedyAC_expectile_True_0.7_v': '#2ca02c',  # Green
+    'GreedyAC': '#8c564b',  # Brown
+    'SAC': '#e377c2',  # Pink
+    'VAC': '#7f7f7f',  # Gray
+    # Add more custom colors here as needed
+    # Example:
+    # 'YourModelName': '#FF5733',  # Custom hex color
+    # Available default colors:
+    # '#1f77b4' (blue), '#ff7f0e' (orange), '#2ca02c' (green),
+    # '#d62728' (red), '#9467bd' (purple), '#8c564b' (brown),
+    # '#e377c2' (pink), '#7f7f7f' (gray), '#bcbd22' (yellow-green),
+    # '#17becf' (cyan)
+}
+# ============================================================================
+
 
 def smooth_data(data, window_size=10):
     """
@@ -172,6 +213,18 @@ def plot_evaluation_rewards(models_data, save_path="./evaluation_rewards.png",
         print("No data to plot")
         return
 
+    # Extract environment name from first available run
+    env_name = "Environment"  # Default
+    for model_name, runs in models_data.items():
+        if len(runs) > 0:
+            try:
+                with open(runs[0]['file_path'], 'rb') as f:
+                    data = pickle.load(f)
+                    env_name = data['experiment']['environment']['env_name']
+                    break
+            except:
+                pass
+
     # Academic paper style
     plt.style.use('seaborn-v0_8-paper')
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -239,11 +292,14 @@ def plot_evaluation_rewards(models_data, save_path="./evaluation_rewards.png",
             stderr_rewards = smooth_data(stderr_rewards, smooth_window)
             mean_timesteps = mean_timesteps[smooth_window-1:]
 
-        # Get color for this model
-        color = colors[idx % len(colors)]
+        # Get display name from legend names dictionary
+        display_name = LEGEND_NAMES.get(model_name, model_name)
+
+        # Get color for this model (use custom color if specified, otherwise use default palette)
+        color = MODEL_COLORS.get(model_name, colors[idx % len(colors)])
 
         # Plot mean line
-        label = f"{model_name}" if n_runs == 1 else f"{model_name} (n={n_runs})"
+        label = f"{display_name}" if n_runs == 1 else f"{display_name} (n={n_runs})"
         ax.plot(mean_timesteps, mean_rewards, label=label, color=color,
                 linewidth=2.0, marker='o', markersize=3,
                 markevery=max(1, len(mean_timesteps)//10))
@@ -261,6 +317,7 @@ def plot_evaluation_rewards(models_data, save_path="./evaluation_rewards.png",
     # Academic paper styling
     ax.set_xlabel('Timesteps', fontsize=14)
     ax.set_ylabel('Evaluation Return', fontsize=14)
+    ax.set_title(env_name, fontsize=16, fontweight='bold')
     ax.tick_params(labelsize=12)
     ax.legend(loc='lower right', fontsize=11, framealpha=0.95)
     ax.grid(True, alpha=0.3, linestyle='-', linewidth=0.5)
@@ -292,6 +349,18 @@ def plot_training_rewards(models_data, save_path="./training_rewards.png",
     if not models_data:
         print("No data to plot")
         return
+
+    # Extract environment name from first available run
+    env_name = "Environment"  # Default
+    for model_name, runs in models_data.items():
+        if len(runs) > 0:
+            try:
+                with open(runs[0]['file_path'], 'rb') as f:
+                    data = pickle.load(f)
+                    env_name = data['experiment']['environment']['env_name']
+                    break
+            except:
+                pass
 
     # Academic paper style
     plt.style.use('seaborn-v0_8-paper')
@@ -353,11 +422,14 @@ def plot_training_rewards(models_data, save_path="./training_rewards.png",
         else:
             timesteps_plot = common_timesteps
 
-        # Get color for this model
-        color = colors[idx % len(colors)]
+        # Get display name from legend names dictionary
+        display_name = LEGEND_NAMES.get(model_name, model_name)
+
+        # Get color for this model (use custom color if specified, otherwise use default palette)
+        color = MODEL_COLORS.get(model_name, colors[idx % len(colors)])
 
         # Plot mean line
-        label = f"{model_name}" if n_runs == 1 else f"{model_name} (n={n_runs})"
+        label = f"{display_name}" if n_runs == 1 else f"{display_name} (n={n_runs})"
         ax.plot(timesteps_plot, mean_rewards, label=label, color=color,
                 linewidth=2.0)
 
@@ -374,6 +446,7 @@ def plot_training_rewards(models_data, save_path="./training_rewards.png",
     # Academic paper styling
     ax.set_xlabel('Timesteps', fontsize=14)
     ax.set_ylabel('Episode Return', fontsize=14)
+    ax.set_title(env_name, fontsize=16, fontweight='bold')
     ax.tick_params(labelsize=12)
     ax.legend(loc='lower right', fontsize=11, framealpha=0.95)
     ax.grid(True, alpha=0.3, linestyle='-', linewidth=0.5)
