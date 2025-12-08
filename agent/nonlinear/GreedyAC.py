@@ -87,12 +87,11 @@ class GreedyAC(BaseAgent):
             action_shape = 1
             
         if self.use_expectile:
-            if self.expectile_mode == 'v':
-                self.value = VMLP(num_inputs, critic_hidden_dim, init, activation).to(
-                    device=self.device)
-            else:  # 'q' mode
-                self.value = QMLP(num_inputs, action_shape, critic_hidden_dim,
-                                 init, activation).to(device=self.device)
+            # if self.expectile_mode == 'v':
+            self.value = VMLP(num_inputs, critic_hidden_dim, init, activation).to(device=self.device)
+            # else:  # 'q' mode
+            #     self.value = QMLP(num_inputs, action_shape, critic_hidden_dim,
+            #                      init, activation).to(device=self.device)
 
             self.value_optim = Adam(self.value.parameters(), lr=critic_lr,
                                     betas=betas)
@@ -145,10 +144,12 @@ class GreedyAC(BaseAgent):
             return
 
         # Update value function if using expectile
+        
+        sampled_action, _, _ = self.policy.sample(state_batch)
                 
         if self.use_expectile:
             with torch.no_grad():
-                q = self.critic_target(state_batch, action_batch)
+                q = self.critic_target(state_batch, sampled_action)
 
             v = self.value(state_batch)
         

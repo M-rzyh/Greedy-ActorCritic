@@ -18,7 +18,7 @@
 		"n_rho": [[30, 0.1]],
         "expectile": [0.9],
         "use_expectile": [true],
-        "save_suffix": ["sampled-action"]
+        "expectile_mode": ["v"]
     }
 }
 
