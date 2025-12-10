@@ -8,7 +8,6 @@ venv/
 **/*.pyc
 
 # Don't store any results
-results/
 
 **/*.png
 
